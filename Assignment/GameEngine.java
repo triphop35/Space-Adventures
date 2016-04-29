@@ -12,13 +12,17 @@ import javax.swing.Timer;
 public class GameEngine implements KeyListener, GameReporter{
 	GamePanel gp;
 		
-	private ArrayList<Enemy> enemies = new ArrayList<Enemy>();	
+	private ArrayList<Enemy> enemies = new ArrayList<Enemy>();
+	private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
+	private ArrayList<Heal> heals = new ArrayList<Heal>();	
 	private SpaceShip v;	
 	
 	private Timer timer;
 	
 	private long score = 0;
 	private double difficulty = 0.1;
+	private double difficultyheal = 0.005;
+	private int num = 100;
 	
 	public GameEngine(GamePanel gp, SpaceShip v) {
 		this.gp = gp;
@@ -46,11 +50,28 @@ public class GameEngine implements KeyListener, GameReporter{
 		gp.sprites.add(e);
 		enemies.add(e);
 	}
+
+	private void generateHeal(){
+		Heal h = new Heal((int)(Math.random()*390), 30);
+		gp.sprites.add(h);
+		heals.add(h);
+	}
+
+	private void generateBullet(SpaceShip v){
+		Bullet b = new Bullet(v.getX()+(v.getWidth()/2),v.getY());
+		gp.sprites.add(b);
+		bullets.add(b);
+	}
 	
 	private void process(){
 		if(Math.random() < difficulty){
 			generateEnemy();
 		}
+
+		if(Math.random() < difficultyheal){
+			generateHeal();
+		}
+		
 		
 		Iterator<Enemy> e_iter = enemies.iterator();
 		while(e_iter.hasNext()){
@@ -60,18 +81,66 @@ public class GameEngine implements KeyListener, GameReporter{
 			if(!e.isAlive()){
 				e_iter.remove();
 				gp.sprites.remove(e);
-				score += 100;
+			}
+		}
+
+		Iterator<Heal> h_iter = heals.iterator();
+		while(h_iter.hasNext()){
+			Heal h = h_iter.next();
+			h.proceed();
+			
+			if(!h.isAlive()){
+				h_iter.remove();
+				gp.sprites.remove(h);
+			}
+		}
+		
+		Iterator<Bullet> b_iter = bullets.iterator();
+		while(b_iter.hasNext()){
+			Bullet b = b_iter.next();
+			b.proceed();
+			
+			if(!b.isAlive()){
+				b_iter.remove();
+				gp.sprites.remove(b);
 			}
 		}
 		
 		gp.updateGameUI(this);
-		
+		gp.bloodSpaceShip(this);
+
 		Rectangle2D.Double vr = v.getRectangle();
 		Rectangle2D.Double er;
+		Rectangle2D.Double br;
+		Rectangle2D.Double hr;
 		for(Enemy e : enemies){
 			er = e.getRectangle();
+			for(Bullet b:bullets){
+				br = b.getRectangle();
+				if(er.intersects(br)){
+					b.die();
+					e.die();
+					score += 100;
+				}
+			}
 			if(er.intersects(vr)){
+				e.die();
+				num = num - 10;
+				return;
+			}
+			if(num == 0){
 				die();
+				gp.bloodSpaceShip(this);
+			}
+		}
+		for(Heal h : heals){
+			hr = h.getRectangle();
+			if(hr.intersects(vr)){
+				h.die();
+				num = num + 10;
+				if(num>100){
+					num = 100;
+				}
 				return;
 			}
 		}
@@ -91,6 +160,15 @@ public class GameEngine implements KeyListener, GameReporter{
 			break;
 		case KeyEvent.VK_D:
 			difficulty += 0.1;
+			break;
+		case KeyEvent.VK_UP:
+			v.moveup(-1);
+			break;
+		case KeyEvent.VK_DOWN:
+			v.moveup(1);
+			break;
+		case KeyEvent.VK_SPACE:
+			generateBullet(v);
 			break;
 		}
 	}
@@ -113,5 +191,9 @@ public class GameEngine implements KeyListener, GameReporter{
 	@Override
 	public void keyTyped(KeyEvent e) {
 		//do nothing		
+	}
+
+	public int getNum(){
+		return num;
 	}
 }
