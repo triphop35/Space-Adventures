@@ -5,6 +5,8 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Iterator;
+import javax.swing.JOptionPane;
+import javax.swing.JFrame;
 
 import javax.swing.Timer;
 
@@ -147,7 +149,9 @@ public class GameEngine implements KeyListener, GameReporter{
 	}
 	
 	public void die(){
+		gp.end();
 		timer.stop();
+		showdialog();
 	}
 	
 	void controlVehicle(KeyEvent e) {
@@ -195,5 +199,11 @@ public class GameEngine implements KeyListener, GameReporter{
 
 	public int getNum(){
 		return num;
+	}
+
+	public void showdialog(){
+		JFrame frame = new JFrame("JOptionPane showMessageDialog example");
+    	JOptionPane.showMessageDialog(frame,"GameOver \n"+score);
+    	System.exit(0);
 	}
 }
